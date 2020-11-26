@@ -1,8 +1,12 @@
+import os
+
 import speck as sp
 
 import numpy as np
 
 from pickle import dump
+
+from tensorflow import keras
 
 from keras.callbacks import ModelCheckpoint, LearningRateScheduler
 from keras.models import Model
@@ -55,13 +59,23 @@ def make_resnet(num_blocks=2, num_filters=32, num_outputs=1, d1=64, d2=64, word_
   model = Model(inputs=inp, outputs=out);
   return(model);
 
-def train_speck_distinguisher(num_epochs, num_rounds=7, depth=1):
+def train_speck_distinguisher(num_epochs, num_rounds=7, depth=1, datagen='rand_inpu_speck_encrypt'):
     #create the network
     net = make_resnet(depth=depth, reg_param=10**-5);
     net.compile(optimizer='adam',loss='mse',metrics=['acc']);
     #generate training and validation data
-    X, Y = sp.make_train_data(10**7,num_rounds);
-    X_eval, Y_eval = sp.make_train_data(10**6, num_rounds);
+    global wdir
+    wdir = wdir[:-1]+'_'+datagen+'/'
+    if not os.path.isdir(wdir):
+        os.mkdir(wdir)
+
+    if datagen == 'rand_inp_speck_encrypt':
+        X, Y = sp.make_train_data(10**7,num_rounds);
+        X_eval, Y_eval = sp.make_train_data(10**6, num_rounds);
+    elif datagen == 'rand_out':
+        X, Y = sp.make_train_data_1(10**7,num_rounds);
+        X_eval, Y_eval = sp.make_train_data_1(10**6, num_rounds);
+
     #set up model checkpoint
     check = make_checkpoint(wdir+'best'+str(num_rounds)+'depth'+str(depth)+'.h5');
     #create learnrate schedule
